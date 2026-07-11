@@ -1,0 +1,2389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lost &amp; Found — Setup Guide</title>
+<style>
+  :root{
+    --accent:#1a3a5c;
+    --accent-hover:#3c5774;
+    --accent-tint:#e8ebef;
+    --ink:#1c2530;
+    --muted:#5b6672;
+    --line:#dfe4ea;
+    --bg:#f5f7f9;
+    --card:#ffffff;
+    --ok:#1a7f37;
+    --warn-bg:#fff8e6;
+    --warn-line:#e0a800;
+    --info-bg:#eef4fb;
+    --danger:#c0392b;
+    --radius:10px;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;}
+
+  .topbar{
+    background:var(--accent);color:#fff;padding:14px 22px;
+    display:flex;align-items:center;gap:12px;transition:background .2s;
+  }
+  .topbar .mark{
+    width:30px;height:30px;border:2px solid #fff;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;
+  }
+  .topbar h1{font-size:1.05rem;font-weight:600;letter-spacing:.2px;}
+  .topbar .sub{font-size:.78rem;opacity:.85;margin-left:auto;text-align:right;}
+
+  .shell{max-width:1080px;margin:0 auto;padding:22px;display:grid;grid-template-columns:230px 1fr;gap:22px;}
+
+  /* step rail */
+  .rail{align-self:start;position:sticky;top:22px;}
+  .rail ol{list-style:none;}
+  .rail li{
+    display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;
+    cursor:pointer;color:var(--muted);font-size:.85rem;transition:background .15s,color .15s;
+  }
+  .rail li:hover{background:#eaeef2;}
+  .rail li.active{background:var(--accent-tint);color:var(--ink);font-weight:600;}
+  .rail li.locked{opacity:.5;cursor:not-allowed;}
+  .rail .dot{
+    width:22px;height:22px;border-radius:50%;flex-shrink:0;
+    border:1.5px solid var(--line);background:#fff;color:var(--muted);
+    display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;
+  }
+  .rail li.active .dot{border-color:var(--accent);color:var(--accent);}
+  .rail li.done .dot{background:var(--ok);border-color:var(--ok);color:#fff;}
+
+  /* panel */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px;min-height:60vh;}
+  .step{display:none;}
+  .step.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--accent);font-weight:700;}
+  .step h2{font-size:1.35rem;margin:4px 0 10px;letter-spacing:-.01em;}
+  .step p{margin:0 0 12px;color:#33404d;}
+  .step p.lead{font-size:1.02rem;}
+  .step ul,.step ol.guide{margin:0 0 14px 4px;padding-left:20px;}
+  .step ol.guide li,.step ul li{margin-bottom:8px;}
+  .kbd{font-family:var(--mono);background:#eef1f4;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:.85em;}
+  code.inl{font-family:var(--mono);background:var(--accent-tint);color:var(--accent);padding:1px 6px;border-radius:4px;font-size:.85em;}
+
+  .callout{border-radius:8px;padding:12px 14px;margin:14px 0;font-size:.9rem;border:1px solid;}
+  .callout .h{font-weight:700;display:block;margin-bottom:3px;}
+  .callout.info{background:var(--info-bg);border-color:#c4d8ef;}
+  .callout.warn{background:var(--warn-bg);border-color:var(--warn-line);}
+  .callout.privacy{background:#f0f7f0;border-color:#bcdcbc;}
+
+  .field{margin:0 0 16px;}
+  .field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:4px;}
+  .field .hint{font-weight:400;color:var(--muted);font-size:.82rem;margin-bottom:6px;}
+  .field input[type=text],.field textarea{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:.95rem;font-family:var(--sans);
+  }
+  .field input:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent);}
+  .field textarea{min-height:74px;resize:vertical;font-family:var(--mono);font-size:.88rem;}
+  .field .err{color:var(--danger);font-size:.82rem;margin-top:5px;display:none;}
+  .field.invalid .err{display:block;}
+  .field.invalid input,.field.invalid textarea{border-color:var(--danger);}
+
+  .color-row{display:flex;gap:10px;align-items:center;}
+  .color-row input[type=text]{flex:1;}
+  .color-row input[type=color]{width:44px;height:42px;border:1px solid var(--line);border-radius:8px;padding:2px;background:#fff;cursor:pointer;}
+
+  .preview-head{
+    margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid var(--line);
+  }
+  .preview-head .bar{background:var(--accent);color:#fff;padding:10px 14px;font-weight:600;font-size:.92rem;transition:background .15s;}
+  .preview-head .body{padding:10px 14px;background:#fff;display:flex;gap:8px;align-items:center;}
+  .preview-head .chip{background:var(--accent-tint);color:var(--accent);border-radius:12px;padding:3px 10px;font-size:.75rem;font-weight:600;}
+  .preview-head .btn{background:var(--accent);color:#fff;border-radius:6px;padding:4px 12px;font-size:.78rem;}
+
+  .file-block{border:1px solid var(--line);border-radius:8px;margin:0 0 16px;overflow:hidden;}
+  .file-block .fhead{background:#f0f3f6;padding:9px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);}
+  .file-block .fname{font-family:var(--mono);font-weight:700;font-size:.9rem;}
+  .file-block .ftag{font-size:.7rem;background:var(--accent);color:#fff;border-radius:10px;padding:1px 8px;}
+  .file-block .factions{margin-left:auto;display:flex;gap:8px;}
+  .file-block .fbody{padding:12px 14px;font-size:.88rem;color:#33404d;}
+
+  .transparency{background:#fbfcfd;border:1px dashed var(--line);border-radius:8px;padding:14px 16px;margin-top:6px;}
+  .transparency h4{font-size:.9rem;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+  .transparency table{width:100%;border-collapse:collapse;font-size:.83rem;}
+  .transparency td{padding:5px 6px;border-bottom:1px solid #eef1f4;vertical-align:top;}
+  .transparency td:first-child{color:var(--muted);white-space:nowrap;width:1%;font-family:var(--mono);}
+  .transparency td:last-child{font-family:var(--mono);word-break:break-all;color:var(--ink);}
+
+  button{font-family:var(--sans);cursor:pointer;}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 12px;font-size:.83rem;font-weight:600;color:var(--ink);}
+  .btn:hover{background:#f0f3f6;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn.primary:hover{background:var(--accent-hover);}
+  .btn.copied{background:var(--ok)!important;border-color:var(--ok)!important;color:#fff!important;}
+
+  .radios{display:flex;flex-direction:column;gap:10px;margin:6px 0 14px;}
+  .radios label{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:11px 13px;cursor:pointer;font-size:.9rem;}
+  .radios label:hover{background:#f7f9fb;}
+  .radios input{margin-top:3px;}
+  .radios .rt{font-weight:600;}
+  .radios .rd{color:var(--muted);font-size:.83rem;}
+  .radios label.sel{border-color:var(--accent);background:var(--accent-tint);}
+
+  .deploy-guidance{border-left:3px solid var(--accent);background:var(--accent-tint);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.9rem;margin:6px 0 14px;}
+
+  .navbtns{display:flex;justify-content:space-between;margin-top:24px;padding-top:18px;border-top:1px solid var(--line);}
+  .navbtns .btn{padding:9px 20px;font-size:.9rem;}
+
+  .checklist{list-style:none;padding:0;margin:8px 0 14px;}
+  .checklist li{padding:6px 0 6px 26px;position:relative;font-size:.92rem;}
+  .checklist li:before{content:"✓";position:absolute;left:2px;color:var(--ok);font-weight:700;}
+
+  .urlsave{display:flex;gap:8px;margin:8px 0 14px;}
+  .urlsave input{flex:1;}
+
+  @media (max-width:820px){
+    .shell{grid-template-columns:1fr;}
+    .rail{position:static;}
+    .rail ol{display:flex;overflow-x:auto;gap:4px;padding-bottom:6px;}
+    .rail li{flex-direction:column;align-items:center;white-space:nowrap;font-size:.72rem;text-align:center;min-width:64px;}
+    .panel{padding:20px 18px;}
+  }
+  @media (prefers-reduced-motion:reduce){.step.active{animation:none;}}
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <div class="mark" id="topmark">L&amp;F</div>
+  <h1 id="toptitle">Lost &amp; Found — Setup Guide</h1>
+  <div class="sub">Runs entirely in your browser<br>Nothing you enter is uploaded</div>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <ol id="rail"></ol>
+  </nav>
+
+  <main class="panel">
+
+    <!-- STEP 1 -->
+    <section class="step active" data-step="0">
+      <span class="eyebrow">Before you start</span>
+      <h2>Set up your own Lost &amp; Found</h2>
+      <p class="lead">This guide walks you through creating your own private, working copy of the Lost &amp; Found web app. You'll create a spreadsheet and a folder, paste in two code files that we customize for you, authorize the app, and publish it.</p>
+      <div class="callout privacy">
+        <span class="h">Your information stays on your device</span>
+        This page has no server and makes no network calls. The email addresses, IDs, and settings you type are only ever inserted into the code you copy — they are never sent anywhere.
+      </div>
+      <p><strong>What you'll need:</strong></p>
+      <ul>
+        <li>A Google account — ideally your school/work Google Workspace account, since it owns the data.</li>
+        <li>About 15 minutes.</li>
+        <li>The list of staff email addresses who should run the office portal (you can edit this later).</li>
+      </ul>
+      <div class="navbtns"><span></span><button class="btn primary" onclick="go(1)">Start &rarr;</button></div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step" data-step="1">
+      <span class="eyebrow">Step 1 of 7</span>
+      <h2>Create your Google Sheet</h2>
+      <p>This spreadsheet stores every lost and found record. You don't need to add any tabs or headings — the app builds those for you later.</p>
+      <ol class="guide">
+        <li>Open a new sheet: go to <code class="inl">sheets.new</code> in your browser, or Drive &rarr; <span class="kbd">New</span> &rarr; Google Sheets.</li>
+        <li>Give it a clear name, e.g. <em>Lost &amp; Found Data</em>.</li>
+        <li>Look at the address bar. The ID is the long code between <code class="inl">/d/</code> and <code class="inl">/edit</code>. Copy it (or copy the whole URL and paste it below — we'll pull the ID out).</li>
+      </ol>
+      <div class="field" id="f-sheet">
+        <label for="sheetId">Spreadsheet ID or URL</label>
+        <div class="hint">Example: <code class="inl">1MA9EMuPPLTfoo...FthexG</code></div>
+        <input type="text" id="sheetId" placeholder="Paste the Sheet ID or full URL" oninput="extractInto('sheetId')">
+        <div class="err">Please paste your spreadsheet ID or URL.</div>
+      </div>
+      <div class="navbtns"><button class="btn" onclick="go(0)">&larr; Back</button><button class="btn primary" onclick="validateAndGo(1,2)">Next &rarr;</button></div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step" data-step="2">
+      <span class="eyebrow">Step 2 of 7</span>
+      <h2>Create a folder for photos</h2>
+      <p>When someone adds a photo of an item, the app saves it to a folder in your Google Drive. Create that folder now.</p>
+      <ol class="guide">
+        <li>In Google Drive, click <span class="kbd">New</span> &rarr; Folder. Name it e.g. <em>Lost &amp; Found Photos</em>.</li>
+        <li>Open the folder. The ID is the code after <code class="inl">/folders/</code> in the address bar. Copy it (or paste the whole URL below).</li>
+      </ol>
+      <div class="callout info">
+        <span class="h">Good to know</span>
+        Each uploaded photo is set to "anyone with the link can view" so it can display in the public catalog. Keep this folder for photos only.
+      </div>
+      <div class="field" id="f-folder">
+        <label for="folderId">Folder ID or URL</label>
+        <input type="text" id="folderId" placeholder="Paste the folder ID or full URL" oninput="extractInto('folderId')">
+        <div class="err">Please paste your folder ID or URL.</div>
+      </div>
+      <div class="navbtns"><button class="btn" onclick="go(1)">&larr; Back</button><button class="btn primary" onclick="validateAndGo(2,3)">Next &rarr;</button></div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="step" data-step="3">
+      <span class="eyebrow">Step 3 of 7</span>
+      <h2>Your settings</h2>
+      <p>These become the customized parts of your app. You can change any of them later by editing the code.</p>
+
+      <div class="field" id="f-title">
+        <label for="appTitle">App name</label>
+        <div class="hint">Shown in the browser tab and the app's header.</div>
+        <input type="text" id="appTitle" value="E.O. Smith Lost &amp; Found" oninput="livePreview()">
+        <div class="err">Please enter a name for your app.</div>
+      </div>
+
+      <div class="field" id="f-admins">
+        <label for="admins">Admin emails <span class="hint" style="display:inline;">— office staff who manage items</span></label>
+        <div class="hint">One per line, or separated by commas. These accounts can post found items and mark things claimed.</div>
+        <textarea id="admins" placeholder="office1@yourschool.org&#10;office2@yourschool.org"></textarea>
+        <div class="err">Add at least one admin email.</div>
+      </div>
+
+      <div class="field" id="f-domains">
+        <label for="domains">Allowed school domains <span class="hint" style="display:inline;">— who may report lost items</span></label>
+        <div class="hint">The part after the @ in your school emails. One per line or comma-separated.</div>
+        <textarea id="domains" placeholder="yourschool.org">eosmith.org&#10;stu.eosmith.org</textarea>
+        <div class="err">Add at least one domain.</div>
+      </div>
+
+      <div class="field" id="f-color">
+        <label for="brandColor">Brand color</label>
+        <div class="hint">Type a color name like <em>navy</em>, <em>teal</em>, or <em>darkgreen</em> — or paste a hex code (e.g. <code class="inl">#1a3a5c</code>) to match an exact brand color. A name is perfectly fine. Need a hex? Search "color picker" or pull one from your logo.</div>
+        <div class="color-row">
+          <input type="text" id="brandColor" value="#1a3a5c" oninput="livePreview()">
+          <input type="color" id="brandPick" value="#1a3a5c" oninput="document.getElementById('brandColor').value=this.value; livePreview();" title="Pick a color">
+        </div>
+        <div class="err" style="display:none;"></div>
+        <div class="preview-head" aria-hidden="true">
+          <div class="bar" id="pvBar">E.O. Smith Lost &amp; Found</div>
+          <div class="body"><span class="chip">Found</span><span class="btn">Report an item</span></div>
+        </div>
+      </div>
+
+      <div class="navbtns"><button class="btn" onclick="go(2)">&larr; Back</button><button class="btn primary" onclick="validateAndGo(3,4)">Next &rarr;</button></div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="step" data-step="4">
+      <span class="eyebrow">Step 4 of 7</span>
+      <h2>Create the project &amp; paste your code</h2>
+      <ol class="guide">
+        <li>Go to <code class="inl">script.google.com</code> and click <span class="kbd">New project</span>.</li>
+        <li>Rename it (top-left) to something like <em>Lost &amp; Found</em>.</li>
+        <li>Add the two files below. Each Copy button gives you the version already filled in with your settings.</li>
+      </ol>
+
+      <div class="file-block">
+        <div class="fhead">
+          <span class="fname">Code.gs</span><span class="ftag">script</span>
+          <div class="factions">
+            <button class="btn" onclick="downloadFile('code')">Download</button>
+            <button class="btn primary" id="cp-code" onclick="copyFile('code','cp-code')">Copy Code.gs</button>
+          </div>
+        </div>
+        <div class="fbody">The editor already contains a file called <code class="inl">Code.gs</code>. Click it, select all (<span class="kbd">Ctrl/Cmd + A</span>), delete, then paste.</div>
+      </div>
+
+      <div class="file-block">
+        <div class="fhead">
+          <span class="fname">Index.html</span><span class="ftag">HTML</span>
+          <div class="factions">
+            <button class="btn" onclick="downloadFile('index')">Download</button>
+            <button class="btn primary" id="cp-index" onclick="copyFile('index','cp-index')">Copy Index.html</button>
+          </div>
+        </div>
+        <div class="fbody">Click the <span class="kbd">+</span> next to "Files" &rarr; <span class="kbd">HTML</span>. Name it exactly <code class="inl">Index</code> (the editor adds <code class="inl">.html</code> for you). Delete the default contents and paste. Then save everything with <span class="kbd">Ctrl/Cmd + S</span>.</div>
+      </div>
+
+      <div class="transparency">
+        <h4>&#128270; What we filled in for you</h4>
+        <p style="font-size:.83rem;color:var(--muted);margin-bottom:8px;">So nothing is a mystery — here's exactly what your settings changed in the code. Everything else is the original app, untouched.</p>
+        <table id="whatChanged"></table>
+      </div>
+
+      <div class="navbtns"><button class="btn" onclick="go(3)">&larr; Back</button><button class="btn primary" onclick="go(5)">I've pasted both files &rarr;</button></div>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="step" data-step="5">
+      <span class="eyebrow">Step 5 of 7</span>
+      <h2>Run setup &amp; authorize</h2>
+      <p>Running the setup function does two things at once: it builds the two tabs your spreadsheet needs, and it triggers Google's one-time permission screen. Because your Sheet ID is already baked into the code you pasted, setup knows exactly which spreadsheet to build.</p>
+      <ol class="guide">
+        <li>In the Apps Script editor toolbar, open the function dropdown (it may say <code class="inl">doGet</code>) and choose <code class="inl">setupSheet</code>.</li>
+        <li>Click <span class="kbd">Run</span>.</li>
+        <li>A window says <strong>"Authorization required."</strong> Click <span class="kbd">Review permissions</span> and pick your Google account.</li>
+      </ol>
+      <div class="callout warn">
+        <span class="h">&#9888; You'll see "Google hasn't verified this app" — this is expected</span>
+        This warning appears for every personal script, because you built it yourself rather than publishing it to the world. Click <span class="kbd">Advanced</span>, then <strong>"Go to [your project name] (unsafe)."</strong> It's your own code running in your own account.
+      </div>
+      <div class="callout info">
+        <span class="h">What it will ask permission for</span>
+        You'll be asked to let the app <strong>see and edit your Google Sheets</strong>, <strong>see, edit, create and delete your Google Drive files</strong>, and <strong>see your email address</strong>. The broad Drive wording looks alarming but is normal here: the app needs it to save item photos into your folder and to know who's signed in. Click <span class="kbd">Allow</span>.
+      </div>
+      <p>Back in the editor, the run finishes. Open your spreadsheet — you should now see two tabs, <code class="inl">Items</code> and <code class="inl">LostItems</code>, each with column headings. That confirms the code and your Sheet ID are wired up correctly.</p>
+      <div class="navbtns"><button class="btn" onclick="go(4)">&larr; Back</button><button class="btn primary" onclick="go(6)">Setup ran successfully &rarr;</button></div>
+    </section>
+
+    <!-- STEP 7 -->
+    <section class="step" data-step="6">
+      <span class="eyebrow">Step 6 of 7</span>
+      <h2>Publish as a web app</h2>
+      <p>Now you'll turn the project into a link people can open.</p>
+      <ol class="guide">
+        <li>Click <span class="kbd">Deploy</span> (top-right) &rarr; <span class="kbd">New deployment</span>.</li>
+        <li>Click the gear icon &rarr; choose <strong>Web app</strong>.</li>
+        <li>Set the two options below exactly as shown.</li>
+      </ol>
+
+      <div class="deploy-guidance">
+        <strong>Execute as:</strong> <em>User accessing the web app</em> &nbsp;(required)<br>
+        This lets the app see who is signed in, so it can show office staff their admin tools and let school users report items. If you pick "Me" instead, everyone looks anonymous and the roles break.
+      </div>
+
+      <p style="font-weight:600;margin-bottom:4px;">Who has access:</p>
+      <div class="radios" id="accessRadios">
+        <label class="sel"><input type="radio" name="access" value="domain" checked onchange="pickAccess()">
+          <span><span class="rt">Only people at my school</span><br><span class="rd">Choose <em>"Anyone within [your Workspace domain]."</em> Tightest option — only school accounts can open it. Best fit for student-data privacy.</span></span></label>
+        <label><input type="radio" name="access" value="anyone" onchange="pickAccess()">
+          <span><span class="rt">Anyone with the link</span><br><span class="rd">Choose <em>"Anyone."</em> Lets parents or the public browse the catalog as guests (they can't report items or see owner names). Only pick this if public browsing is intended.</span></span></label>
+      </div>
+
+      <ol class="guide" start="4">
+        <li>Click <span class="kbd">Deploy</span>. If asked to authorize again, follow the same steps as before.</li>
+        <li>Copy the <strong>Web app URL</strong> it gives you. That's your live app — open it yourself first to check it loads.</li>
+      </ol>
+      <div class="navbtns"><button class="btn" onclick="go(5)">&larr; Back</button><button class="btn primary" onclick="go(7)">I've deployed it &rarr;</button></div>
+    </section>
+
+    <!-- STEP 8 -->
+    <section class="step" data-step="7">
+      <span class="eyebrow">Step 7 of 7</span>
+      <h2>You're live</h2>
+      <p class="lead">Your Lost &amp; Found is running as your own private copy.</p>
+      <div class="field">
+        <label for="liveUrl">Save your web app URL</label>
+        <div class="hint">Paste it here to keep it handy, then bookmark it. (This just stores it on screen — it isn't sent anywhere.)</div>
+        <div class="urlsave">
+          <input type="text" id="liveUrl" placeholder="https://script.google.com/.../exec">
+          <button class="btn primary" onclick="copyUrl(this)">Copy</button>
+        </div>
+      </div>
+      <p style="font-weight:600;">Before you share it:</p>
+      <ul class="checklist">
+        <li>Open the URL yourself and confirm the catalog loads.</li>
+        <li>Sign in as an admin email and check the Admin Portal appears.</li>
+        <li>Add one test found item, confirm a photo uploads, then delete the test.</li>
+      </ul>
+      <div class="callout info">
+        <span class="h">Changing the app later</span>
+        When you edit the code, republish with <span class="kbd">Deploy</span> &rarr; <span class="kbd">Manage deployments</span> &rarr; pencil icon &rarr; Version: <strong>New version</strong> &rarr; Deploy. This keeps the same URL. Creating a brand-new deployment instead would give you a different link.
+      </div>
+      <div class="navbtns"><button class="btn" onclick="go(6)">&larr; Back</button><button class="btn primary" onclick="go(0)">Set up another &rarr;</button></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ EMBEDDED APP SOURCE (read as raw text, never executed here) ============ -->
+<script type="text/plain" id="tpl_code">// ============================================================
+// CONFIGURATION
+// ============================================================
+const SHEET_ID = '%%SHEET_ID%%';
+const UPLOAD_FOLDER_ID = '%%UPLOAD_FOLDER_ID%%';
+const ADMIN_EMAILS = %%ADMIN_EMAILS%%;
+const ORG_DOMAINS = %%ORG_DOMAINS%%;
+
+// ============================================================
+// ALLOWED IMAGE MIME TYPES
+// SVG excluded intentionally — it is XML and can contain scripts.
+// Empty string is excluded here; client-side lets it through for
+// iOS compatibility, but any upload attempt with no MIME type will
+// have already been compressed to image/jpeg by compressWithOrientation().
+// ============================================================
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',   // .jpg — universal
+  'image/png',    // .png — screenshots, logos
+  'image/gif',    // .gif — rare but harmless
+  'image/webp',   // .webp — modern Android/Chrome default
+  'image/heic',   // .heic — iPhone default (iOS 11+)
+  'image/heif',   // .heif — HEIC variant, same Apple origin
+  'image/bmp',    // .bmp — older Windows cameras
+  'image/tiff'    // .tiff — some scanner apps
+];
+
+// ============================================================
+// WEB APP ENTRY POINT
+// ============================================================
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('%%APP_TITLE_JS%%')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function getCurrentUser() {
+  const email = Session.getActiveUser().getEmail();
+  const isOrgUser = email ? ORG_DOMAINS.some(domain => email.endsWith('@' + domain)) : false;
+  return {
+    email: email,
+    isAdmin: ADMIN_EMAILS.includes(email),
+    isOrgUser: isOrgUser
+  };
+}
+
+// ============================================================
+// INPUT SANITIZATION
+// ============================================================
+function sanitizeText(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/<[^>]*>/g, '')
+    .replace(/[<>]/g, '')
+    .trim()
+    .substring(0, 500);
+}
+
+// ============================================================
+// ROW INDEX VALIDATION
+// ============================================================
+function validateRowIndex(sheet, rowIndex) {
+  if (typeof rowIndex !== 'number' || !Number.isInteger(rowIndex)) {
+    throw new Error('Invalid row index.');
+  }
+  const lastRow = sheet.getLastRow();
+  if (rowIndex < 2 || rowIndex > lastRow) {
+    throw new Error('Row index out of range.');
+  }
+}
+
+// ============================================================
+// UPLOAD HELPER — with MIME type validation
+// ============================================================
+function uploadImage(imageDataUrl, imageMimeType, itemName, timestamp) {
+  if (!imageDataUrl) return '';
+
+  const normalizedMime = (imageMimeType || '').toLowerCase();
+  if (!normalizedMime || !ALLOWED_MIME_TYPES.includes(normalizedMime)) {
+    throw new Error(
+      'Unsupported image type' + (imageMimeType ? ': ' + imageMimeType : '') + '. ' +
+      'Please use JPEG, PNG, WebP, HEIC, GIF, BMP, or TIFF.'
+    );
+  }
+
+  const base64Data = imageDataUrl.split(',')[1];
+  const blob = Utilities.newBlob(
+    Utilities.base64Decode(base64Data),
+    normalizedMime,
+    itemName + '_' + timestamp.getTime()
+  );
+  const folder = DriveApp.getFolderById(UPLOAD_FOLDER_ID);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+  return 'https://lh3.googleusercontent.com/d/' + file.getId();
+}
+
+// ============================================================
+// SUBMIT A FOUND ITEM — admin only
+// ============================================================
+function submitFoundItem(itemName, description, imageDataUrl, imageMimeType) {
+  if (!getCurrentUser().isAdmin) throw new Error('Only admin staff can submit found items.');
+
+  const cleanName = sanitizeText(itemName);
+  const cleanDesc = sanitizeText(description);
+  if (!cleanName || !cleanDesc) throw new Error('Item name and description are required.');
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Items');
+  const user = Session.getActiveUser().getEmail();
+  const timestamp = new Date();
+  const imageUrl = uploadImage(imageDataUrl, imageMimeType, cleanName, timestamp);
+
+  // Columns: Timestamp | Item Name | Description | Image URL | Status | Submitter Email | Notes
+  sheet.appendRow([timestamp, cleanName, cleanDesc, imageUrl, 'Available', user, '']);
+  return { success: true };
+}
+
+// ============================================================
+// SUBMIT A LOST ITEM — any org user
+// ============================================================
+function submitLostItem(itemName, description, ownerName, imageDataUrl, imageMimeType) {
+  if (!getCurrentUser().isOrgUser) throw new Error('Lost item reports require a school email address.');
+
+  const cleanName      = sanitizeText(itemName);
+  const cleanDesc      = sanitizeText(description);
+  const cleanOwnerName = sanitizeText(ownerName);
+  if (!cleanName || !cleanDesc) throw new Error('Item name and description are required.');
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('LostItems');
+  const user = Session.getActiveUser().getEmail();
+  const timestamp = new Date();
+  const imageUrl = uploadImage(imageDataUrl, imageMimeType, cleanName, timestamp);
+
+  // Columns: Timestamp | Item Name | Description | Image URL | Status | Submitter Email | Owner Name | Notes
+  sheet.appendRow([timestamp, cleanName, cleanDesc, imageUrl, 'Active', user, cleanOwnerName, '']);
+  return { success: true };
+}
+
+// ============================================================
+// EDIT AN EXISTING ITEM — admin only
+// Handles both found (Items sheet) and lost (LostItems sheet)
+// ============================================================
+function editItem(rowIndex, type, fields) {
+  if (!getCurrentUser().isAdmin) throw new Error('Unauthorized');
+
+  const sheetName = type === 'lost' ? 'LostItems' : 'Items';
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(sheetName);
+  validateRowIndex(sheet, rowIndex);
+
+  const cleanName   = sanitizeText(fields.name);
+  const cleanDesc   = sanitizeText(fields.description);
+  const cleanStatus = sanitizeText(fields.status);
+  const cleanNotes  = sanitizeText(fields.notes);
+
+  if (!cleanName || !cleanDesc) throw new Error('Item name and description are required.');
+
+  // Validate status values per type
+  const validFoundStatuses = ['Available', 'Claimed', 'Donated'];
+  const validLostStatuses  = ['Active', 'Found'];
+  const validStatuses = type === 'lost' ? validLostStatuses : validFoundStatuses;
+  if (!validStatuses.includes(cleanStatus)) throw new Error('Invalid status value.');
+
+  // Upload new image if provided, otherwise keep existing
+  let imageUrl = fields.existingImageUrl || '';
+  if (fields.imageDataUrl) {
+    const timestamp = new Date();
+    imageUrl = uploadImage(fields.imageDataUrl, fields.imageMimeType, cleanName, timestamp);
+  }
+
+  if (type === 'lost') {
+    // Columns: Timestamp | Item Name | Description | Image URL | Status | Submitter Email | Owner Name | Notes
+    const cleanOwner = sanitizeText(fields.ownerName);
+    sheet.getRange(rowIndex, 2).setValue(cleanName);
+    sheet.getRange(rowIndex, 3).setValue(cleanDesc);
+    sheet.getRange(rowIndex, 4).setValue(imageUrl);
+    sheet.getRange(rowIndex, 5).setValue(cleanStatus);
+    sheet.getRange(rowIndex, 7).setValue(cleanOwner);
+    sheet.getRange(rowIndex, 8).setValue(cleanNotes);
+  } else {
+    // Columns: Timestamp | Item Name | Description | Image URL | Status | Submitter Email | Notes
+    sheet.getRange(rowIndex, 2).setValue(cleanName);
+    sheet.getRange(rowIndex, 3).setValue(cleanDesc);
+    sheet.getRange(rowIndex, 4).setValue(imageUrl);
+    sheet.getRange(rowIndex, 5).setValue(cleanStatus);
+    sheet.getRange(rowIndex, 7).setValue(cleanNotes);
+  }
+
+  return { success: true };
+}
+
+// ============================================================
+// GET CATALOG ITEMS — public
+// ============================================================
+function getCatalogItems() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const items = [];
+
+  const foundSheet = ss.getSheetByName('Items');
+  if (foundSheet) {
+    const foundData = foundSheet.getDataRange().getValues();
+    for (let i = 1; i < foundData.length; i++) {
+      const row = foundData[i];
+      if (row[4] !== 'Available') continue;
+      items.push({
+        id: i + 1, type: 'found',
+        date: row[0] ? Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'MM/dd/yyyy') : '',
+        name: row[1], description: row[2], imageUrl: row[3], status: row[4]
+      });
+    }
+  }
+
+  const lostSheet = ss.getSheetByName('LostItems');
+  if (lostSheet) {
+    const lostData = lostSheet.getDataRange().getValues();
+    for (let i = 1; i < lostData.length; i++) {
+      const row = lostData[i];
+      if (row[4] !== 'Active') continue;
+      items.push({
+        id: i + 1, type: 'lost',
+        date: row[0] ? Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'MM/dd/yyyy') : '',
+        name: row[1], description: row[2], imageUrl: row[3], status: row[4]
+      });
+    }
+  }
+
+  return items;
+}
+
+// ============================================================
+// GET ALL ITEMS FOR ADMIN
+// ============================================================
+function getAdminItems() {
+  if (!getCurrentUser().isAdmin) throw new Error('Unauthorized');
+
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const items = [];
+
+  const foundSheet = ss.getSheetByName('Items');
+  if (foundSheet) {
+    const foundData = foundSheet.getDataRange().getValues();
+    for (let i = 1; i < foundData.length; i++) {
+      const row = foundData[i];
+      items.push({
+        id: i + 1, type: 'found',
+        date: row[0] ? Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'MM/dd/yyyy') : '',
+        name: row[1], description: row[2], imageUrl: row[3],
+        status: row[4], submitter: row[5], ownerName: '', notes: row[6] || ''
+      });
+    }
+  }
+
+  const lostSheet = ss.getSheetByName('LostItems');
+  if (lostSheet) {
+    const lostData = lostSheet.getDataRange().getValues();
+    for (let i = 1; i < lostData.length; i++) {
+      const row = lostData[i];
+      items.push({
+        id: i + 1, type: 'lost',
+        date: row[0] ? Utilities.formatDate(new Date(row[0]), Session.getScriptTimeZone(), 'MM/dd/yyyy') : '',
+        name: row[1], description: row[2], imageUrl: row[3],
+        status: row[4], submitter: row[5], ownerName: row[6] || '', notes: row[7] || ''
+      });
+    }
+  }
+
+  items.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return items;
+}
+
+// ============================================================
+// UPDATE FOUND ITEM STATUS + NOTE (admin only)
+// ============================================================
+function updateItemStatus(rowIndex, newStatus, note) {
+  if (!getCurrentUser().isAdmin) throw new Error('Unauthorized');
+
+  const validStatuses = ['Available', 'Claimed', 'Donated'];
+  if (!validStatuses.includes(newStatus)) throw new Error('Invalid status value.');
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Items');
+  validateRowIndex(sheet, rowIndex);
+
+  sheet.getRange(rowIndex, 5).setValue(newStatus);
+  if (note) sheet.getRange(rowIndex, 7).setValue(sanitizeText(note));
+  return { success: true };
+}
+
+// ============================================================
+// UPDATE LOST ITEM STATUS + NOTE (admin only)
+// ============================================================
+function updateLostItemStatus(rowIndex, newStatus, note) {
+  if (!getCurrentUser().isAdmin) throw new Error('Unauthorized');
+
+  const validStatuses = ['Active', 'Found'];
+  if (!validStatuses.includes(newStatus)) throw new Error('Invalid status value.');
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('LostItems');
+  validateRowIndex(sheet, rowIndex);
+
+  sheet.getRange(rowIndex, 5).setValue(newStatus);
+  if (note) sheet.getRange(rowIndex, 8).setValue(sanitizeText(note));
+  return { success: true };
+}
+
+// ============================================================
+// DELETE FOUND ITEM (admin only)
+// ============================================================
+function deleteItem(rowIndex) {
+  if (!getCurrentUser().isAdmin) throw new Error('Unauthorized');
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Items');
+  validateRowIndex(sheet, rowIndex);
+  sheet.deleteRow(rowIndex);
+  return { success: true };
+}
+
+// ============================================================
+// DELETE LOST ITEM (admin only)
+// ============================================================
+function deleteLostItem(rowIndex) {
+  if (!getCurrentUser().isAdmin) throw new Error('Unauthorized');
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('LostItems');
+  validateRowIndex(sheet, rowIndex);
+  sheet.deleteRow(rowIndex);
+  return { success: true };
+}
+
+// ============================================================
+// SHEET SETUP HELPER — run once manually
+// ============================================================
+function setupSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+
+  let foundSheet = ss.getSheetByName('Items');
+  if (!foundSheet) foundSheet = ss.insertSheet('Items');
+  foundSheet.getRange(1, 1, 1, 7).setValues([['Timestamp', 'Item Name', 'Description', 'Image URL', 'Status', 'Submitter Email', 'Notes']]);
+
+  let lostSheet = ss.getSheetByName('LostItems');
+  if (!lostSheet) lostSheet = ss.insertSheet('LostItems');
+  lostSheet.getRange(1, 1, 1, 8).setValues([['Timestamp', 'Item Name', 'Description', 'Image URL', 'Status', 'Submitter Email', 'Owner Name', 'Notes']]);
+}
+// ── Public claimed count — safe for all users ─────────────────
+// Returns only a number, no item details or submitter info.
+// Called by the catalog counter on page load.
+function getClaimedCount() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Items');
+  if (!sheet) return 0;
+  const data = sheet.getDataRange().getValues();
+  let count = 0;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][4] === 'Claimed') count++;
+  }
+  return count;
+}
+</script>
+
+<script type="text/plain" id="tpl_indexhtml"><!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>%%APP_TITLE_HTML%%</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    header {
+      background: #1a3a5c;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    header h1 { font-size: 1.3rem; }
+
+    nav { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    nav button {
+      background: transparent;
+      border: 2px solid white;
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    nav button:hover, nav button.active {
+      background: white;
+      color: #1a3a5c;
+    }
+
+    #reportFoundBtn { display: none; }
+    #reportLostBtn  { display: none; }
+    #adminNavBtn    { display: none; }
+
+    .view { display: none; padding: 20px; max-width: 960px; margin: 0 auto; }
+    .view.active { display: block; }
+    /* Admin view is wider — let it fill available width */
+    #adminView { max-width: none; padding: 20px 24px; }
+
+    /* ---- CATALOG ---- */
+    .catalog-controls {
+      display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+    }
+    .catalog-controls input {
+      flex: 1; min-width: 180px; padding: 8px 12px;
+      border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem;
+    }
+    .catalog-controls select {
+      padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem;
+    }
+
+    /* ── Catalog counter chips ── */
+    .catalog-counter {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .ctr-chip {
+      background: #fff;
+      border-radius: 6px;
+      padding: 5px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.25;
+    }
+    .ctr-num           { font-size: 1rem; font-weight: 700; color: #1a3a5c; }
+    .ctr-num.red       { color: #c00; }
+    .ctr-num.green     { color: #155724; }
+    .ctr-lbl           { font-size: 0.67rem; color: #888; text-transform: uppercase; letter-spacing: .3px; }
+
+    /* ---- A-Z NAV ---- */
+    .alpha-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+    .alpha-nav button {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+      color: #1a3a5c;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      line-height: 28px;
+      text-align: center;
+    }
+    .alpha-nav button:hover:not(:disabled) {
+      background: #1a3a5c;
+      color: white;
+      border-color: #1a3a5c;
+    }
+    .alpha-nav button.active-letter {
+      background: #1a3a5c;
+      color: white;
+      border-color: #1a3a5c;
+    }
+    .alpha-nav button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+    .alpha-nav .alpha-clear {
+      width: auto;
+      padding: 0 10px;
+      color: #555;
+      border-color: #ccc;
+      font-weight: normal;
+      font-size: 0.75rem;
+    }
+    .alpha-nav .alpha-clear:hover:not(:disabled) {
+      background: #eee;
+      color: #222;
+      border-color: #bbb;
+    }
+
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .item-card {
+      background: white; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08); overflow: hidden;
+    }
+    .item-card img { width: 100%; height: auto; object-fit: contain; background: #eee; }
+    .item-card .no-photo {
+      width: 100%; height: 120px; display: flex; align-items: center;
+      justify-content: center; background: #e8edf2; color: #888; font-size: 0.85rem;
+    }
+    .item-card .card-body { padding: 8px; }
+    .item-card h3 { font-size: 0.88rem; margin-bottom: 4px; }
+    .item-card .date { font-size: 0.72rem; margin-bottom: 4px; }
+    .date-found { color: #888; }
+    .date-lost  { color: #c00; font-weight: 600; }
+    .item-card p { font-size: 0.8rem; color: #444; }
+    .item-card.lost-card { border-left: 3px solid #c00; }
+
+    /* ---- LIGHTBOX ---- */
+    .item-card.has-photo { cursor: zoom-in; }
+    .item-card.has-photo img { transition: opacity 0.15s; }
+    .item-card.has-photo img:hover { opacity: 0.85; }
+
+    .lightbox-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.82); z-index: 2000;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .lightbox-overlay.active { display: flex; }
+
+    .lightbox-box {
+      position: relative; max-width: 90vw; max-height: 90vh;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .lightbox-box img {
+      max-width: 100%; max-height: 78vh;
+      border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      object-fit: contain; background: #111;
+    }
+    .lightbox-caption {
+      color: white; text-align: center; max-width: 600px;
+    }
+    .lightbox-caption strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+    .lightbox-caption span  { font-size: 0.85rem; color: #ccc; }
+
+    .lightbox-close {
+      position: absolute; top: -14px; right: -14px;
+      background: white; border: none; border-radius: 50%;
+      width: 32px; height: 32px; font-size: 1.1rem; line-height: 32px;
+      text-align: center; cursor: pointer; color: #333;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .lightbox-close:hover { background: #eee; }
+
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; margin-top: 16px; font-size: 0.9rem;
+    }
+    .claim-note {
+      margin-top: 20px; background: #e8f0fe;
+      border-left: 4px solid #1a3a5c; padding: 12px 16px;
+      border-radius: 4px; font-size: 0.9rem;
+    }
+
+    /* ---- SUBMIT FORMS ---- */
+    .form-card {
+      background: white; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08); padding: 24px; max-width: 540px;
+    }
+    .form-card h2 { margin-bottom: 6px; font-size: 1.1rem; }
+    .form-note {
+      font-size: 0.85rem; color: #555; margin-bottom: 20px;
+      background: #fff8e1; border-left: 4px solid #f9a825;
+      padding: 8px 12px; border-radius: 4px;
+    }
+    .form-note.lost-note { background: #fff0f0; border-left: 4px solid #c00; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
+    .form-group .field-hint { font-size: 0.78rem; color: #888; font-weight: normal; margin-left: 6px; }
+    .form-group input[type="text"],
+    .form-group textarea,
+    .form-group select {
+      width: 100%; padding: 9px 12px; border: 1px solid #ccc;
+      border-radius: 6px; font-size: 0.95rem; font-family: inherit;
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    /* ---- PHOTO PREVIEW + ROTATE ---- */
+    .photo-wrap {
+      margin-top: 8px;
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .photo-wrap img {
+      max-width: 100%;
+      max-height: 220px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      display: block;
+    }
+    .rotate-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f0f4f8;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .rotate-btn:hover { background: #dce6f0; }
+
+    .btn-primary {
+      background: #1a3a5c; color: white; border: none;
+      padding: 10px 24px; border-radius: 6px; font-size: 0.95rem;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #255080; }
+    .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ---- NOTE MODAL ---- */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: white; border-radius: 12px; padding: 24px;
+      max-width: 480px; width: 92%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h3 { margin-bottom: 6px; font-size: 1rem; }
+    .modal p  { font-size: 0.85rem; color: #555; margin-bottom: 14px; }
+    .modal textarea {
+      width: 100%; padding: 9px 12px; border: 1px solid #ccc;
+      border-radius: 6px; font-size: 0.9rem; font-family: inherit;
+      resize: vertical; min-height: 80px; margin-bottom: 14px;
+    }
+    .modal-required-hint { font-size: 0.78rem; color: #c00; margin-bottom: 10px; display: none; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+    .btn-secondary {
+      background: white; color: #444; border: 1px solid #ccc;
+      padding: 8px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer;
+    }
+    .btn-secondary:hover { background: #f0f0f0; }
+
+    /* ---- EDIT MODAL SPECIFICS ---- */
+    .edit-current-photo {
+      display: flex; flex-direction: column; gap: 6px;
+      align-items: flex-start; margin-bottom: 8px;
+    }
+    .edit-current-photo img {
+      max-width: 180px; max-height: 180px; border-radius: 6px;
+      border: 1px solid #ddd; object-fit: contain;
+    }
+    .edit-photo-hint {
+      font-size: 0.78rem; color: #666; font-style: italic;
+    }
+
+    /* ---- ADMIN PORTAL ---- */
+
+    /* Controls bar mirrors catalog-controls layout */
+    .admin-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .admin-controls select {
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .admin-row-count {
+      font-size: 0.82rem;
+      color: #666;
+      margin-left: auto;
+    }
+
+    .admin-table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%; border-collapse: collapse; background: white;
+      border-radius: 10px; overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08); font-size: 0.88rem;
+      min-width: 1100px;
+    }
+    th {
+      background: #1a3a5c; color: white; padding: 10px 12px;
+      text-align: left; white-space: nowrap;
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.status-claimed td { opacity: 0.5; }
+    tr.status-donated td { opacity: 0.5; }
+    tr.status-found   td { opacity: 0.5; }
+    tr.type-lost { background: #fff8f8; }
+
+    .thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+
+    .type-badge {
+      display: inline-block; padding: 2px 8px;
+      border-radius: 12px; font-size: 0.72rem; font-weight: 600;
+    }
+    .type-badge-found { background: #e8f0fe; color: #1a3a5c; }
+    .type-badge-lost  { background: #fde8e8; color: #c00; }
+
+    .status-badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 12px; font-size: 0.78rem; font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-available { background: #d4edda; color: #155724; }
+    .badge-active    { background: #d4edda; color: #155724; }
+    .badge-claimed   { background: #d1ecf1; color: #0c5460; }
+    .badge-donated   { background: #f8d7da; color: #721c24; }
+    .badge-found     { background: #d1ecf1; color: #0c5460; }
+
+    .notes-cell { font-size: 0.78rem; color: #555; font-style: italic; max-width: 160px; }
+
+    /* Actions cell — wide enough for all buttons */
+    .actions-cell {
+      min-width: 240px;
+      white-space: nowrap;
+    }
+
+    .action-btn {
+      display: inline-block;
+      padding: 4px 9px; border-radius: 4px; border: 1px solid #ccc;
+      background: white; cursor: pointer; font-size: 0.78rem;
+      margin-right: 3px; margin-bottom: 4px;
+      white-space: nowrap;
+    }
+    .action-btn:hover { background: #eee; }
+    .action-btn.edit-btn { border-color: #1a3a5c; color: #1a3a5c; }
+    .action-btn.edit-btn:hover { background: #e8f0fe; }
+    .action-btn.delete-btn { color: #c00; border-color: #c00; }
+    .action-btn.delete-btn:hover { background: #fde8e8; }
+
+    .loading { text-align: center; padding: 40px; color: #888; }
+    .msg { padding: 12px 16px; border-radius: 6px; margin-bottom: 14px; font-size: 0.9rem; }
+    .msg-success { background: #d4edda; color: #155724; }
+    .msg-error   { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>%%APP_TITLE_HTML%%</h1>
+  <nav>
+    <button class="active" onclick="showView('catalog', this)">Browse Items</button>
+    <button id="reportFoundBtn" onclick="showView('submitFound', this)">Report a Found Item</button>
+    <button id="reportLostBtn" onclick="showView('submitLost', this)">Report a Lost Item</button>
+    <span id="guestNote" style="display:none; font-size:0.8rem; color:#cce0ff; font-style:italic; align-self:center;">Sign in with a school account to report items</span>
+    <button id="adminNavBtn" onclick="showView('admin', this)">Admin Portal</button>
+  </nav>
+</header>
+
+<!-- LIGHTBOX -->
+<div class="lightbox-overlay" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-box">
+    <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <img id="lightboxImg" src="" alt="">
+    <div class="lightbox-caption">
+      <strong id="lightboxName"></strong>
+      <span id="lightboxDesc"></span>
+    </div>
+  </div>
+</div>
+
+<!-- NOTE MODAL -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal">
+    <h3 id="modalTitle">Add a Note</h3>
+    <p id="modalDesc">Optionally record details about this status change.</p>
+    <textarea id="modalNoteText" placeholder="e.g., Returned to Jane Smith, Grade 11"></textarea>
+    <div class="modal-required-hint" id="modalRequiredHint">&#9888;&#65039; A note is required when marking an item as Claimed.</div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmModal()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3 id="editModalHeading">Edit Item</h3>
+    <div id="editMsg"></div>
+
+    <div class="form-group">
+      <label>Item Name *</label>
+      <input type="text" id="editName">
+    </div>
+    <div class="form-group">
+      <label>Description *</label>
+      <textarea id="editDesc"></textarea>
+    </div>
+    <div class="form-group" id="editOwnerGroup" style="display:none;">
+      <label>Owner's Name <span class="field-hint">(visible to admin only)</span></label>
+      <input type="text" id="editOwner">
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="editStatus"></select>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="editNotes" style="min-height:60px;"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Photo</label>
+      <div class="edit-current-photo" id="editCurrentPhotoWrap">
+        <img id="editCurrentPhoto" src="" alt="Current photo" style="display:none;">
+        <span class="edit-photo-hint" id="editNoPhotoHint">No photo currently on file.</span>
+      </div>
+      <div id="editRotateWrap" style="display:none; margin-bottom:8px;">
+        <button class="rotate-btn" onclick="rotateEditExisting()">&#8635; Rotate existing photo 90°</button>
+        <span style="font-size:0.75rem; color:#888; margin-left:8px;">Click to fix orientation</span>
+      </div>
+      <input type="file" id="editPhotoInput" accept="image/*"
+             onchange="handleEditPhoto(event)" style="margin-top:4px;">
+      <div class="photo-wrap" id="editNewPhotoWrap">
+        <img id="editNewPhotoPreview" src="" alt="New photo preview">
+        <button class="rotate-btn" onclick="rotateNewPhoto('editNewPhotoPreview', 'editNewPhotoCanvas')">
+          &#8635; Rotate 90°
+        </button>
+      </div>
+      <canvas id="editNewPhotoCanvas" style="display:none;"></canvas>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-primary" id="editSaveBtn" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATALOG VIEW -->
+<div id="catalogView" class="view active">
+  <div class="catalog-controls">
+
+    <!-- Counter chips — populated by updateCatalogCounters() on load -->
+    <div class="catalog-counter">
+      <div class="ctr-chip">
+        <span class="ctr-num" id="ctrFound">—</span>
+        <span class="ctr-lbl">Found</span>
+      </div>
+      <div class="ctr-chip">
+        <span class="ctr-num red" id="ctrLost">—</span>
+        <span class="ctr-lbl">Lost</span>
+      </div>
+      <div class="ctr-chip">
+        <span class="ctr-num green" id="ctrClaimed">—</span>
+        <span class="ctr-lbl">Claimed</span>
+      </div>
+    </div>
+
+    <input type="text" id="searchInput" placeholder="Search by name or description..." oninput="onSearchOrSort()">
+    <select id="sortSelect" onchange="onSearchOrSort()">
+      <option value="date-desc">Newest First</option>
+      <option value="date-asc">Oldest First</option>
+      <option value="alpha-asc">A&#8594;Z</option>
+      <option value="alpha-desc">Z&#8594;A</option>
+    </select>
+    <select id="typeFilter" onchange="onSearchOrSort()">
+      <option value="all">All Items</option>
+      <option value="found">Found Only</option>
+      <option value="lost">Lost Only</option>
+    </select>
+  </div>
+  <div class="alpha-nav" id="alphaNav"></div>
+  <div id="itemGrid" class="item-grid">
+    <div class="loading">Loading items...</div>
+  </div>
+  <div class="pagination">
+    <button class="action-btn" id="prevBtn" onclick="changePage(-1)" disabled>&#8592; Previous</button>
+    <span id="pageIndicator">Page 1 of 1</span>
+    <button class="action-btn" id="nextBtn" onclick="changePage(1)" disabled>Next &#8594;</button>
+  </div>
+  <div class="claim-note">
+    To claim a found item or to report a found item as yours, please see the
+    <strong>administrative assistants in the main office</strong>.
+  </div>
+</div>
+
+<!-- SUBMIT FOUND ITEM VIEW (admin only) -->
+<div id="submitFoundView" class="view">
+  <div class="form-card">
+    <h2>Report a Found Item</h2>
+    <div class="form-note">
+      Please turn found items in to the <strong>main office</strong> so they can be stored safely.
+      This form adds the item to our public catalog so the owner can find it.
+    </div>
+    <div id="submitFoundMsg"></div>
+    <div class="form-group">
+      <label for="foundItemName">Item Name *</label>
+      <input type="text" id="foundItemName" placeholder="e.g., Blue water bottle">
+    </div>
+    <div class="form-group">
+      <label for="foundItemDesc">Description *</label>
+      <textarea id="foundItemDesc" placeholder="Where found, color, brand, size, any identifying features..."></textarea>
+    </div>
+    <div class="form-group">
+      <label for="foundItemPhoto">Photo <span class="field-hint">(optional but helpful)</span></label>
+      <input type="file" id="foundItemPhoto" accept="image/*"
+             onchange="handlePhotoSelect('foundItemPhoto', 'foundPhotoWrap', 'foundPhotoPreview', 'foundPhotoCanvas')">
+      <div class="photo-wrap" id="foundPhotoWrap">
+        <img id="foundPhotoPreview" src="" alt="Preview">
+        <button class="rotate-btn" onclick="rotateNewPhoto('foundPhotoPreview', 'foundPhotoCanvas')">
+          &#8635; Rotate 90°
+        </button>
+      </div>
+      <canvas id="foundPhotoCanvas" style="display:none;"></canvas>
+    </div>
+    <button class="btn-primary" id="submitFoundBtn" onclick="submitFoundItem()">Submit Found Item</button>
+  </div>
+</div>
+
+<!-- SUBMIT LOST ITEM VIEW (all org users) -->
+<div id="submitLostView" class="view">
+  <div class="form-card">
+    <h2>Report a Lost Item</h2>
+    <div class="form-note lost-note">
+      Describe the lost item as clearly as possible. The owner's name will not be shown publicly.
+      Office staff will use it to contact the owner if the item turns up.
+    </div>
+    <div id="submitLostMsg"></div>
+    <div class="form-group">
+      <label for="lostItemName">Item Name *</label>
+      <input type="text" id="lostItemName" placeholder="e.g., Black North Face backpack">
+    </div>
+    <div class="form-group">
+      <label for="lostItemDesc">Description *</label>
+      <textarea id="lostItemDesc" placeholder="Color, brand, size, where it was last seen..."></textarea>
+    </div>
+    <div class="form-group">
+      <label for="lostOwnerName">Owner's Name
+        <span class="field-hint">(Only visible to office staff)</span>
+      </label>
+      <input type="text" id="lostOwnerName" placeholder="e.g., Jane Smith">
+    </div>
+    <div class="form-group">
+      <label for="lostItemPhoto">Photo <span class="field-hint">(optional)</span></label>
+      <input type="file" id="lostItemPhoto" accept="image/*"
+             onchange="handlePhotoSelect('lostItemPhoto', 'lostPhotoWrap', 'lostPhotoPreview', 'lostPhotoCanvas')">
+      <div class="photo-wrap" id="lostPhotoWrap">
+        <img id="lostPhotoPreview" src="" alt="Preview">
+        <button class="rotate-btn" onclick="rotateNewPhoto('lostPhotoPreview', 'lostPhotoCanvas')">
+          &#8635; Rotate 90°
+        </button>
+      </div>
+      <canvas id="lostPhotoCanvas" style="display:none;"></canvas>
+    </div>
+    <button class="btn-primary" id="submitLostBtn" onclick="submitLostItem()">Submit Lost Item Report</button>
+  </div>
+</div>
+
+<!-- ADMIN VIEW -->
+<div id="adminView" class="view">
+  <h2 style="margin-bottom:14px;">Admin Portal</h2>
+  <div id="adminMsg"></div>
+
+  <div class="admin-controls">
+    <select id="adminFilter" onchange="applyAdminFilters()">
+      <option value="all">All Items</option>
+      <option value="all-active">All Active</option>
+      <option value="active-found">Active Found</option>
+      <option value="active-lost">Active Lost</option>
+      <option value="claimed">Claimed</option>
+      <option value="donated">Donated</option>
+    </select>
+    <span class="admin-row-count" id="adminRowCount"></span>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Photo</th>
+          <th>Date</th>
+          <th>Item Name</th>
+          <th>Description</th>
+          <th>Submitter</th>
+          <th>Owner Name</th>
+          <th>Status</th>
+          <th>Notes</th>
+          <th style="min-width:240px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="adminTableBody">
+        <tr><td colspan="10" class="loading">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // STATE
+  // ============================================================
+  let allItems = [];
+  let filteredItems = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 30;
+  let isAdmin = false;
+
+  let modalCallback = null;
+  let modalRequiresNote = false;
+  let editState = {};
+  let activeAlphaLetter = null;
+
+  // Admin portal state
+  let adminAllItems = [];
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  window.onload = function() {
+    buildAlphaNav();
+    google.script.run
+      .withSuccessHandler(function(user) {
+        isAdmin = user.isAdmin;
+        if (isAdmin) {
+          document.getElementById('reportFoundBtn').style.display = 'inline-block';
+          document.getElementById('adminNavBtn').style.display = 'inline-block';
+        }
+        if (user.isOrgUser) {
+          document.getElementById('reportLostBtn').style.display = 'inline-block';
+          document.getElementById('guestNote').style.display = 'none';
+        } else {
+          document.getElementById('reportLostBtn').style.display = 'none';
+          document.getElementById('guestNote').style.display = 'inline-block';
+        }
+        loadCatalog();
+      })
+      .withFailureHandler(function() {
+        document.getElementById('reportLostBtn').style.display = 'none';
+        document.getElementById('guestNote').style.display = 'inline-block';
+        loadCatalog();
+      })
+      .getCurrentUser();
+  };
+
+  // ============================================================
+  // A-Z NAV
+  // ============================================================
+  function buildAlphaNav() {
+    const nav = document.getElementById('alphaNav');
+    nav.innerHTML = '';
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      btn.textContent = letter;
+      btn.id = 'alpha-' + letter;
+      btn.title = 'Jump to items starting with ' + letter;
+      btn.disabled = true;
+      btn.onclick = function() { filterByLetter(letter); };
+      nav.appendChild(btn);
+    });
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = 'All';
+    clearBtn.className = 'alpha-clear';
+    clearBtn.title = 'Show all items';
+    clearBtn.onclick = clearAlphaFilter;
+    nav.appendChild(clearBtn);
+  }
+
+  function updateAlphaNav() {
+    const typeFilter = document.getElementById('typeFilter').value;
+    const available = new Set();
+    allItems.forEach(item => {
+      const matchesType = typeFilter === 'all' || item.type === typeFilter;
+      if (matchesType && item.name) {
+        const first = item.name.trim()[0];
+        if (first) available.add(first.toUpperCase());
+      }
+    });
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+      const btn = document.getElementById('alpha-' + letter);
+      if (!btn) return;
+      btn.disabled = !available.has(letter);
+      btn.classList.toggle('active-letter', letter === activeAlphaLetter);
+    });
+  }
+
+  function filterByLetter(letter) {
+    activeAlphaLetter = letter;
+    document.getElementById('searchInput').value = '';
+    applyFilters();
+    updateAlphaNav();
+  }
+
+  function clearAlphaFilter() {
+    activeAlphaLetter = null;
+    updateAlphaNav();
+    applyFilters();
+  }
+
+  // ============================================================
+  // VIEW SWITCHING
+  // ============================================================
+  function showView(view, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(view + 'View').classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (view === 'admin' && isAdmin) loadAdminTable();
+  }
+
+  // ============================================================
+  // CATALOG
+  // ============================================================
+  function loadCatalog() {
+    google.script.run
+      .withSuccessHandler(function(items) {
+        allItems = items;
+        updateCatalogCounters(items);
+        onSearchOrSort();
+      })
+      .withFailureHandler(function() {
+        document.getElementById('itemGrid').innerHTML =
+          '<div class="loading">Error loading items. Please refresh.</div>';
+      })
+      .getCatalogItems();
+  }
+
+  // ── Catalog counters ─────────────────────────────────────────
+  // Found + Lost counts come from the already-loaded catalog data
+  // (no extra server call). Claimed items are filtered out of the
+  // public catalog, so getClaimedCount() returns just a number —
+  // no item details — safe for all users.
+  function updateCatalogCounters(items) {
+    document.getElementById('ctrFound').textContent = items.filter(i => i.type === 'found').length;
+    document.getElementById('ctrLost').textContent  = items.filter(i => i.type === 'lost').length;
+
+    google.script.run
+      .withSuccessHandler(function(n) {
+        document.getElementById('ctrClaimed').textContent = n;
+      })
+      .withFailureHandler(function() {
+        document.getElementById('ctrClaimed').textContent = '—';
+      })
+      .getClaimedCount();
+  }
+
+  function onSearchOrSort() {
+    activeAlphaLetter = null;
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const query      = document.getElementById('searchInput').value.toLowerCase();
+    const sort       = document.getElementById('sortSelect').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+
+    filteredItems = allItems.filter(item => {
+      const matchesType = typeFilter === 'all' || item.type === typeFilter;
+      if (!matchesType) return false;
+      if (activeAlphaLetter) {
+        return item.name && item.name.trim().toUpperCase().startsWith(activeAlphaLetter);
+      }
+      return item.name.toLowerCase().includes(query) ||
+             item.description.toLowerCase().includes(query);
+    });
+
+    filteredItems.sort((a, b) => {
+      if (sort === 'date-desc')  return new Date(b.date) - new Date(a.date);
+      if (sort === 'date-asc')   return new Date(a.date) - new Date(b.date);
+      if (sort === 'alpha-asc')  return a.name.localeCompare(b.name);
+      if (sort === 'alpha-desc') return b.name.localeCompare(a.name);
+    });
+
+    currentPage = 1;
+    updateAlphaNav();
+    renderCatalog();
+  }
+
+  function changePage(direction) {
+    currentPage += direction;
+    renderCatalog();
+    window.scrollTo(0, 0);
+  }
+
+  function renderCatalog() {
+    const grid = document.getElementById('itemGrid');
+    const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+    currentPage = Math.min(currentPage, totalPages);
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = filteredItems.slice(start, start + PAGE_SIZE);
+
+    document.getElementById('pageIndicator').textContent = `Page ${currentPage} of ${totalPages}`;
+    document.getElementById('prevBtn').disabled = currentPage === 1;
+    document.getElementById('nextBtn').disabled = currentPage === totalPages;
+
+    if (pageItems.length === 0) {
+      grid.innerHTML = '<div class="loading">No items found.</div>';
+      return;
+    }
+
+    grid.innerHTML = pageItems.map(item => {
+      const isLost = item.type === 'lost';
+      const dateLabel = isLost
+        ? `<span class="date-lost">Lost: ${item.date}</span>`
+        : `<span class="date-found">Found: ${item.date}</span>`;
+      return `
+        <div class="item-card${isLost ? ' lost-card' : ''}${item.imageUrl ? ' has-photo' : ''}"
+          ${item.imageUrl ? `data-img="${escHtml(item.imageUrl)}" data-name="${escHtml(item.name)}" data-desc="${escHtml(item.description)}"` : ''}>
+          ${item.imageUrl
+            ? `<img src="${item.imageUrl}" alt="${escHtml(item.name)}" loading="lazy">`
+            : `<div class="no-photo">No photo submitted</div>`}
+          <div class="card-body">
+            <h3>${escHtml(item.name)}</h3>
+            <div class="date">${dateLabel}</div>
+            <p>${escHtml(item.description)}</p>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ============================================================
+  // IMAGE HELPERS
+  // ============================================================
+  function getExifOrientation(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const view = new DataView(e.target.result);
+        if (view.getUint16(0, false) !== 0xFFD8) return resolve(1);
+        let offset = 2;
+        while (offset < view.byteLength) {
+          const marker = view.getUint16(offset, false);
+          offset += 2;
+          if (marker === 0xFFE1) {
+            if (view.getUint32(offset += 2, false) !== 0x45786966) return resolve(1);
+            const little = view.getUint16(offset += 6, false) === 0x4949;
+            offset += view.getUint32(offset + 4, little);
+            const tags = view.getUint16(offset, little);
+            offset += 2;
+            for (let i = 0; i < tags; i++) {
+              if (view.getUint16(offset + i * 12, little) === 0x0112) {
+                return resolve(view.getUint16(offset + i * 12 + 8, little));
+              }
+            }
+          } else if ((marker & 0xFF00) !== 0xFF00) break;
+          else offset += view.getUint16(offset, false);
+        }
+        resolve(1);
+      };
+      reader.readAsArrayBuffer(file.slice(0, 65536));
+    });
+  }
+
+  function drawWithOrientation(ctx, img, orientation, w, h) {
+    ctx.save();
+    switch (orientation) {
+      case 2: ctx.transform(-1, 0, 0, 1, w, 0); break;
+      case 3: ctx.transform(-1, 0, 0, -1, w, h); break;
+      case 4: ctx.transform(1, 0, 0, -1, 0, h); break;
+      case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+      case 6: ctx.transform(0, 1, -1, 0, h, 0); break;
+      case 7: ctx.transform(0, -1, -1, 0, h, w); break;
+      case 8: ctx.transform(0, -1, 1, 0, 0, w); break;
+    }
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+  }
+
+  async function compressWithOrientation(file, maxWidth, quality) {
+    const orientation = await getExifOrientation(file);
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const swapped = orientation >= 5 && orientation <= 8;
+          const srcW = swapped ? img.height : img.width;
+          const srcH = swapped ? img.width  : img.height;
+          const scale = Math.min(1, maxWidth / srcW);
+          const canvas = document.createElement('canvas');
+          canvas.width  = srcW * scale;
+          canvas.height = srcH * scale;
+          const ctx = canvas.getContext('2d');
+          ctx.scale(scale, scale);
+          drawWithOrientation(ctx, img, orientation, img.width, img.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handlePhotoSelect(inputId, wrapId, previewId, canvasId) {
+    const file    = document.getElementById(inputId).files[0];
+    const wrap    = document.getElementById(wrapId);
+    const preview = document.getElementById(previewId);
+    const canvas  = document.getElementById(canvasId);
+    if (!file) { wrap.style.display = 'none'; return; }
+    compressWithOrientation(file, 800, 0.75).then(dataUrl => {
+      preview.src = dataUrl;
+      const img = new Image();
+      img.onload = function() {
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+      };
+      img.src = dataUrl;
+      wrap.style.display = 'flex';
+    });
+  }
+
+  function rotateNewPhoto(previewId, canvasId) {
+    const preview = document.getElementById(previewId);
+    const canvas  = document.getElementById(canvasId);
+    if (!canvas.width) return;
+    const tmp = document.createElement('canvas');
+    tmp.width  = canvas.height;
+    tmp.height = canvas.width;
+    const ctx = tmp.getContext('2d');
+    ctx.translate(tmp.width / 2, tmp.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    canvas.width  = tmp.width;
+    canvas.height = tmp.height;
+    canvas.getContext('2d').drawImage(tmp, 0, 0);
+    preview.src = canvas.toDataURL('image/jpeg', 0.85);
+  }
+
+  function getCanvasDataUrl(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !canvas.width) return null;
+    return canvas.toDataURL('image/jpeg', 0.85);
+  }
+
+  // ============================================================
+  // SUBMIT FOUND ITEM
+  // ============================================================
+  function submitFoundItem() {
+    const name = document.getElementById('foundItemName').value.trim();
+    const desc = document.getElementById('foundItemDesc').value.trim();
+    const btn  = document.getElementById('submitFoundBtn');
+    if (!name || !desc) {
+      showMsg('submitFoundMsg', 'Please fill in the item name and description.', false);
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    const dataUrl  = getCanvasDataUrl('foundPhotoCanvas');
+    const mimeType = dataUrl ? 'image/jpeg' : null;
+    google.script.run
+      .withSuccessHandler(() => {
+        document.getElementById('foundItemName').value = '';
+        document.getElementById('foundItemDesc').value = '';
+        document.getElementById('foundItemPhoto').value = '';
+        document.getElementById('foundPhotoWrap').style.display = 'none';
+        document.getElementById('foundPhotoCanvas').width = 0;
+        btn.disabled = false;
+        btn.textContent = 'Submit Found Item';
+        showMsg('submitFoundMsg', '\u2705 Item submitted! Please bring it to the main office.', true);
+        loadCatalog();
+      })
+      .withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = 'Submit Found Item';
+        showMsg('submitFoundMsg', '\u274c Submission failed: ' + err.message, false);
+      })
+      .submitFoundItem(name, desc, dataUrl, mimeType);
+  }
+
+  // ============================================================
+  // SUBMIT LOST ITEM
+  // ============================================================
+  function submitLostItem() {
+    const name      = document.getElementById('lostItemName').value.trim();
+    const desc      = document.getElementById('lostItemDesc').value.trim();
+    const ownerName = document.getElementById('lostOwnerName').value.trim();
+    const btn       = document.getElementById('submitLostBtn');
+    if (!name || !desc) {
+      showMsg('submitLostMsg', 'Please fill in the item name and description.', false);
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    const dataUrl  = getCanvasDataUrl('lostPhotoCanvas');
+    const mimeType = dataUrl ? 'image/jpeg' : null;
+    google.script.run
+      .withSuccessHandler(() => {
+        document.getElementById('lostItemName').value  = '';
+        document.getElementById('lostItemDesc').value  = '';
+        document.getElementById('lostOwnerName').value = '';
+        document.getElementById('lostItemPhoto').value = '';
+        document.getElementById('lostPhotoWrap').style.display = 'none';
+        document.getElementById('lostPhotoCanvas').width = 0;
+        btn.disabled = false;
+        btn.textContent = 'Submit Lost Item Report';
+        showMsg('submitLostMsg', '\u2705 Lost item report submitted. Office staff will be in touch if it turns up.', true);
+        loadCatalog();
+      })
+      .withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = 'Submit Lost Item Report';
+        showMsg('submitLostMsg', '\u274c Submission failed: ' + err.message, false);
+      })
+      .submitLostItem(name, desc, ownerName, dataUrl, mimeType);
+  }
+
+  // ============================================================
+  // NOTE MODAL
+  // ============================================================
+  function openModal(title, desc, requiresNote, onConfirm) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalDesc').textContent = desc;
+    document.getElementById('modalNoteText').value = '';
+    document.getElementById('modalRequiredHint').style.display = 'none';
+    document.getElementById('noteModal').classList.add('active');
+    modalRequiresNote = requiresNote;
+    modalCallback = onConfirm;
+  }
+
+  function closeModal() {
+    document.getElementById('noteModal').classList.remove('active');
+    modalCallback = null;
+    modalRequiresNote = false;
+  }
+
+  function confirmModal() {
+    const note = document.getElementById('modalNoteText').value.trim();
+    if (modalRequiresNote && !note) {
+      document.getElementById('modalRequiredHint').style.display = 'block';
+      return;
+    }
+    closeModal();
+    if (modalCallback) modalCallback(note);
+  }
+
+  // ============================================================
+  // EDIT MODAL
+  // ============================================================
+  function openEditModal(item) {
+    editState = {
+      id: item.id, type: item.type,
+      existingImageUrl: item.imageUrl || '',
+      existingRotated: false
+    };
+
+    document.getElementById('editModalHeading').textContent =
+      'Edit ' + (item.type === 'lost' ? 'Lost' : 'Found') + ' Item';
+    document.getElementById('editName').value  = item.name;
+    document.getElementById('editDesc').value  = item.description;
+    document.getElementById('editNotes').value = item.notes || '';
+    document.getElementById('editMsg').innerHTML = '';
+
+    const ownerGroup = document.getElementById('editOwnerGroup');
+    if (item.type === 'lost') {
+      ownerGroup.style.display = 'block';
+      document.getElementById('editOwner').value = item.ownerName || '';
+    } else {
+      ownerGroup.style.display = 'none';
+      document.getElementById('editOwner').value = '';
+    }
+
+    const statusSelect = document.getElementById('editStatus');
+    statusSelect.innerHTML = '';
+    const statuses = item.type === 'lost' ? ['Active', 'Found'] : ['Available', 'Claimed', 'Donated'];
+    statuses.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      if (s === item.status) opt.selected = true;
+      statusSelect.appendChild(opt);
+    });
+
+    const currentPhoto   = document.getElementById('editCurrentPhoto');
+    const noPhotoHint    = document.getElementById('editNoPhotoHint');
+    const rotateWrap     = document.getElementById('editRotateWrap');
+    const existingCanvas = document.getElementById('editExistingCanvas');
+
+    if (item.imageUrl) {
+      currentPhoto.src = item.imageUrl;
+      currentPhoto.style.display = 'block';
+      noPhotoHint.style.display  = 'none';
+      rotateWrap.style.display   = 'block';
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        existingCanvas.width  = img.width  || 800;
+        existingCanvas.height = img.height || 600;
+        try { existingCanvas.getContext('2d').drawImage(img, 0, 0); } catch(e) {}
+      };
+      img.src = item.imageUrl;
+    } else {
+      currentPhoto.src = '';
+      currentPhoto.style.display = 'none';
+      noPhotoHint.style.display  = 'block';
+      rotateWrap.style.display   = 'none';
+    }
+
+    document.getElementById('editPhotoInput').value = '';
+    document.getElementById('editNewPhotoWrap').style.display = 'none';
+    document.getElementById('editNewPhotoCanvas').width = 0;
+    document.getElementById('editModal').classList.add('active');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('active');
+    editState = {};
+  }
+
+  function rotateEditExisting() {
+    const canvas  = document.getElementById('editExistingCanvas');
+    const preview = document.getElementById('editCurrentPhoto');
+    if (!canvas.width) {
+      showMsg('editMsg', '&#9888;&#65039; Cannot rotate the stored image directly due to browser security. Upload a corrected photo using the file input below instead.', false);
+      return;
+    }
+    const tmp = document.createElement('canvas');
+    tmp.width  = canvas.height;
+    tmp.height = canvas.width;
+    const ctx = tmp.getContext('2d');
+    ctx.translate(tmp.width / 2, tmp.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    canvas.width  = tmp.width;
+    canvas.height = tmp.height;
+    canvas.getContext('2d').drawImage(tmp, 0, 0);
+    preview.src = canvas.toDataURL('image/jpeg', 0.85);
+    editState.existingRotated = true;
+  }
+
+  function handleEditPhoto(event) {
+    const file = event.target.files[0];
+    if (!file) { document.getElementById('editNewPhotoWrap').style.display = 'none'; return; }
+    compressWithOrientation(file, 800, 0.75).then(dataUrl => {
+      const preview = document.getElementById('editNewPhotoPreview');
+      const canvas  = document.getElementById('editNewPhotoCanvas');
+      preview.src = dataUrl;
+      const img = new Image();
+      img.onload = function() {
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+      };
+      img.src = dataUrl;
+      document.getElementById('editNewPhotoWrap').style.display = 'flex';
+    });
+  }
+
+  function saveEdit() {
+    const name   = document.getElementById('editName').value.trim();
+    const desc   = document.getElementById('editDesc').value.trim();
+    const status = document.getElementById('editStatus').value;
+    const notes  = document.getElementById('editNotes').value.trim();
+    const owner  = document.getElementById('editOwner').value.trim();
+    const btn    = document.getElementById('editSaveBtn');
+
+    if (!name || !desc) {
+      showMsg('editMsg', 'Item name and description are required.', false);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    let imageDataUrl  = null;
+    let imageMimeType = null;
+    let existingImageUrl = editState.existingImageUrl;
+
+    const newCanvas      = document.getElementById('editNewPhotoCanvas');
+    const existingCanvas = document.getElementById('editExistingCanvas');
+
+    if (newCanvas.width) {
+      imageDataUrl  = newCanvas.toDataURL('image/jpeg', 0.85);
+      imageMimeType = 'image/jpeg';
+      existingImageUrl = '';
+    } else if (editState.existingRotated && existingCanvas.width) {
+      imageDataUrl  = existingCanvas.toDataURL('image/jpeg', 0.85);
+      imageMimeType = 'image/jpeg';
+      existingImageUrl = '';
+    }
+
+    google.script.run
+      .withSuccessHandler(() => {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        closeEditModal();
+        showMsg('adminMsg', '\u2705 Item updated successfully.', true);
+        loadAdminTable();
+        loadCatalog();
+      })
+      .withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        showMsg('editMsg', '\u274c Error: ' + err.message, false);
+      })
+      .editItem(editState.id, editState.type, {
+        name, description: desc, status, notes,
+        ownerName: owner, imageDataUrl, imageMimeType, existingImageUrl
+      });
+  }
+
+  // ============================================================
+  // ADMIN FILTER
+  // ============================================================
+  function applyAdminFilters() {
+    const f = document.getElementById('adminFilter').value;
+    const visible = adminAllItems.filter(item => {
+      if (f === 'all')          return true;
+      if (f === 'all-active')   return (item.type === 'found' && item.status === 'Available') ||
+                                       (item.type === 'lost'  && item.status === 'Active');
+      if (f === 'active-found') return item.type === 'found' && item.status === 'Available';
+      if (f === 'active-lost')  return item.type === 'lost'  && item.status === 'Active';
+      if (f === 'claimed')      return item.type === 'found' && item.status === 'Claimed';
+      if (f === 'donated')      return item.type === 'found' && item.status === 'Donated';
+      return true;
+    });
+    renderAdminTable(visible);
+  }
+
+  // ============================================================
+  // ADMIN TABLE
+  // ============================================================
+  function loadAdminTable() {
+    document.getElementById('adminTableBody').innerHTML =
+      '<tr><td colspan="10" class="loading">Loading...</td></tr>';
+    google.script.run
+      .withSuccessHandler(function(items) {
+        adminAllItems = items;
+        applyAdminFilters();
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('adminTableBody').innerHTML =
+          `<tr><td colspan="10">Error: ${e.message}</td></tr>`;
+      })
+      .getAdminItems();
+  }
+
+  function renderAdminTable(visible) {
+    document.getElementById('adminRowCount').textContent =
+      visible.length === 1 ? '1 item' : visible.length + ' items';
+
+    const tbody = document.getElementById('adminTableBody');
+
+    if (visible.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="loading">No items match the current filter.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = visible.map(item => {
+      const isLost    = item.type === 'lost';
+      const typeBadge = isLost
+        ? `<span class="type-badge type-badge-lost">Lost</span>`
+        : `<span class="type-badge type-badge-found">Found</span>`;
+
+      const statusActions = isLost ? `
+        ${item.status !== 'Found'  ? `<button class="action-btn" onclick="doUpdateLost(${item.id}, 'Found')">Item Found</button>` : ''}
+        ${item.status !== 'Active' ? `<button class="action-btn" onclick="doUpdateLost(${item.id}, 'Active')">Restore</button>` : ''}
+      ` : `
+        ${item.status !== 'Claimed'   ? `<button class="action-btn" onclick="doUpdateFound(${item.id}, 'Claimed')">Claimed</button>` : ''}
+        ${item.status !== 'Donated'   ? `<button class="action-btn" onclick="doUpdateFound(${item.id}, 'Donated')">Donated</button>` : ''}
+        ${item.status !== 'Available' ? `<button class="action-btn" onclick="doUpdateFound(${item.id}, 'Available')">Restore</button>` : ''}
+      `;
+
+      const deleteBtn = isLost
+        ? `<button class="action-btn delete-btn" onclick="removeLostItem(${item.id})">Delete</button>`
+        : `<button class="action-btn delete-btn" onclick="removeFoundItem(${item.id})">Delete</button>`;
+
+      return `
+        <tr class="status-${item.status.toLowerCase()} type-${item.type}">
+          <td>${typeBadge}</td>
+          <td>${item.imageUrl ? `<img src="${item.imageUrl}" class="thumb" alt="">` : '\u2014'}</td>
+          <td style="white-space:nowrap;">${item.date}</td>
+          <td>${escHtml(item.name)}</td>
+          <td>${escHtml(item.description)}</td>
+          <td style="white-space:nowrap;">${escHtml(item.submitter || '')}</td>
+          <td>${escHtml(item.ownerName || '\u2014')}</td>
+          <td><span class="status-badge badge-${item.status.toLowerCase()}">${item.status}</span></td>
+          <td class="notes-cell">${escHtml(item.notes || '')}</td>
+          <td class="actions-cell">
+            <button class="action-btn edit-btn" onclick='openEditModal(${JSON.stringify(item)})'>&#9998; Edit</button>
+            ${statusActions}
+            ${deleteBtn}
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function doUpdateFound(rowId, newStatus) {
+    const requiresNote = newStatus === 'Claimed';
+    const title = `Mark as ${newStatus}`;
+    const desc = requiresNote
+      ? 'Please record who this item was returned to. This note is required.'
+      : 'Optionally add a note about this status change.';
+    openModal(title, desc, requiresNote, function(note) {
+      google.script.run
+        .withSuccessHandler(() => { showMsg('adminMsg', `\u2705 Item marked as ${newStatus}.`, true); loadAdminTable(); loadCatalog(); })
+        .withFailureHandler(e  => { showMsg('adminMsg', '\u274c Error: ' + e.message, false); })
+        .updateItemStatus(rowId, newStatus, note);
+    });
+  }
+
+  function doUpdateLost(rowId, newStatus) {
+    const requiresNote = newStatus === 'Found';
+    const title = newStatus === 'Found' ? 'Mark Item as Found' : 'Restore to Active';
+    const desc  = requiresNote
+      ? 'Please record how this lost item was recovered. This note is required.'
+      : 'Optionally add a note about this status change.';
+    openModal(title, desc, requiresNote, function(note) {
+      google.script.run
+        .withSuccessHandler(() => { showMsg('adminMsg', `\u2705 Item marked as ${newStatus}.`, true); loadAdminTable(); loadCatalog(); })
+        .withFailureHandler(e  => { showMsg('adminMsg', '\u274c Error: ' + e.message, false); })
+        .updateLostItemStatus(rowId, newStatus, note);
+    });
+  }
+
+  function removeFoundItem(rowId) {
+    if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+    google.script.run
+      .withSuccessHandler(() => { showMsg('adminMsg', '\u2705 Item deleted.', true); loadAdminTable(); loadCatalog(); })
+      .withFailureHandler(e  => { showMsg('adminMsg', '\u274c Error: ' + e.message, false); })
+      .deleteItem(rowId);
+  }
+
+  function removeLostItem(rowId) {
+    if (!confirm('Permanently delete this lost item report? This cannot be undone.')) return;
+    google.script.run
+      .withSuccessHandler(() => { showMsg('adminMsg', '\u2705 Item deleted.', true); loadAdminTable(); loadCatalog(); })
+      .withFailureHandler(e  => { showMsg('adminMsg', '\u274c Error: ' + e.message, false); })
+      .deleteLostItem(rowId);
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  function showMsg(id, text, success) {
+    const el = document.getElementById(id);
+    el.className = 'msg ' + (success ? 'msg-success' : 'msg-error');
+    el.textContent = text;
+    setTimeout(() => { el.textContent = ''; el.className = ''; }, 5000);
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function escAttr(str) {
+    return String(str).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+  }
+
+  // ============================================================
+  // LIGHTBOX
+  // ============================================================
+  document.addEventListener('click', function(e) {
+    const card = e.target.closest('.has-photo');
+    if (card) {
+      document.getElementById('lightboxImg').src = card.getAttribute('data-img');
+      document.getElementById('lightboxName').textContent = card.getAttribute('data-name');
+      document.getElementById('lightboxDesc').textContent = card.getAttribute('data-desc');
+      document.getElementById('lightbox').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+  });
+
+  function closeLightbox(event) {
+    if (event && event.target !== document.getElementById('lightbox')) return;
+    document.getElementById('lightbox').classList.remove('active');
+    document.getElementById('lightboxImg').src = '';
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.getElementById('lightbox').classList.remove('active');
+      document.getElementById('lightboxImg').src = '';
+      document.body.style.overflow = '';
+    }
+  });
+%%CLOSE_SCRIPT%%
+
+<canvas id="editExistingCanvas" style="display:none;"></canvas>
+
+</body>
+</html>
+</script>
+
+<!-- ============ WIZARD LOGIC ============ -->
+<script>
+  const DEFAULT_NAVY='#1a3a5c', DEFAULT_HOVER='#255080', DEFAULT_TINT='#e8f0fe';
+  const RAIL=['Start','Sheet','Folder','Settings','Code','Authorize','Deploy','Finish'];
+  let current=0, maxReached=0;
+
+  // ---------- rail ----------
+  (function buildRail(){
+    const ol=document.getElementById('rail');
+    RAIL.forEach((label,i)=>{
+      const li=document.createElement('li');
+      li.innerHTML='<span class="dot">'+(i)+'</span><span>'+label+'</span>';
+      li.onclick=()=>{ if(i<=maxReached) go(i); };
+      ol.appendChild(li);
+    });
+    document.querySelector('#rail li .dot').textContent='•';
+    paintRail();
+  })();
+
+  function paintRail(){
+    document.querySelectorAll('#rail li').forEach((li,i)=>{
+      li.classList.toggle('active',i===current);
+      li.classList.toggle('done',i<current);
+      li.classList.toggle('locked',i>maxReached);
+    });
+  }
+
+  function go(i){
+    current=i; maxReached=Math.max(maxReached,i);
+    document.querySelectorAll('.step').forEach(s=>s.classList.toggle('active',+s.dataset.step===i));
+    paintRail();
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(i===4) renderWhatChanged();
+  }
+
+  // ---------- id extraction ----------
+  function extractInto(id){
+    const el=document.getElementById(id);
+    const raw=el.value.trim();
+    const m=raw.match(/[-\w]{25,}/);
+    if(m && raw.includes('/')){ el.value=m[0]; }
+    clearErr(id==='sheetId'?'f-sheet':'f-folder');
+  }
+  function idFrom(id){
+    const raw=document.getElementById(id).value.trim();
+    const m=raw.match(/[-\w]{25,}/);
+    return m?m[0]:raw;
+  }
+
+  // ---------- validation ----------
+  function markErr(fid){document.getElementById(fid).classList.add('invalid');}
+  function clearErr(fid){const e=document.getElementById(fid);if(e)e.classList.remove('invalid');}
+
+  function validateAndGo(from,to){
+    let ok=true;
+    if(from===1){ if(!idFrom('sheetId')){markErr('f-sheet');ok=false;} }
+    if(from===2){ if(!idFrom('folderId')){markErr('f-folder');ok=false;} }
+    if(from===3){
+      if(!document.getElementById('appTitle').value.trim()){markErr('f-title');ok=false;}
+      if(parseList('admins').length===0){markErr('f-admins');ok=false;}
+      if(parseList('domains').length===0){markErr('f-domains');ok=false;}
+    }
+    if(ok) go(to);
+  }
+
+  function parseList(id){
+    return document.getElementById(id).value
+      .split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+  }
+  function parseDomains(id){
+    return parseList(id).map(d=>d.replace(/^@/,'').replace(/^https?:\/\//,'').trim()).filter(Boolean);
+  }
+
+  // ---------- color ----------
+  function resolveRGB(input){
+    if(!input) return null;
+    const probe=document.createElement('span');
+    probe.style.color='';
+    probe.style.color=input;          // invalid values leave color as ''
+    if(probe.style.color==='') return null;
+    document.body.appendChild(probe);
+    const c=getComputedStyle(probe).color;
+    document.body.removeChild(probe);
+    const m=c.match(/\d+/g);
+    return m?[+m[0],+m[1],+m[2]]:null;
+  }
+  const toHex=a=>'#'+a.map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join('');
+  const lighten=(a,f)=>a.map(x=>x+(255-x)*f);
+  function brandShades(){
+    const input=document.getElementById('brandColor').value.trim()||DEFAULT_NAVY;
+    const rgb=resolveRGB(input);
+    if(!rgb) return {primary:DEFAULT_NAVY,hover:DEFAULT_HOVER,tint:DEFAULT_TINT,valid:false};
+    return {primary:toHex(rgb),hover:toHex(lighten(rgb,0.15)),tint:toHex(lighten(rgb,0.88)),valid:true};
+  }
+
+  function livePreview(){
+    const s=brandShades();
+    document.documentElement.style.setProperty('--accent',s.primary);
+    document.documentElement.style.setProperty('--accent-hover',s.hover);
+    document.documentElement.style.setProperty('--accent-tint',s.tint);
+    const title=document.getElementById('appTitle').value.trim()||'Your app';
+    document.getElementById('pvBar').textContent=title;
+    document.getElementById('toptitle').textContent=title+' — Setup Guide';
+    clearErr('f-title');clearErr('f-admins');clearErr('f-domains');
+  }
+
+  // ---------- code generation ----------
+  const escJs=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const escHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const arrLit=a=>'['+a.map(x=>"'"+escJs(x)+"'").join(', ')+']';
+
+  function genCode(){
+    const t=document.getElementById('tpl_code').textContent;
+    return t
+      .split('%%SHEET_ID%%').join(escJs(idFrom('sheetId')))
+      .split('%%UPLOAD_FOLDER_ID%%').join(escJs(idFrom('folderId')))
+      .split('%%ADMIN_EMAILS%%').join(arrLit(parseList('admins')))
+      .split('%%ORG_DOMAINS%%').join(arrLit(parseDomains('domains')))
+      .split('%%APP_TITLE_JS%%').join(escJs(document.getElementById('appTitle').value.trim()));
+  }
+
+  function genIndex(){
+    const s=brandShades();
+    let t=document.getElementById('tpl_indexhtml').textContent;
+    t=t.split('%%CLOSE_SCRIPT%%').join('</'+'script>');
+    t=t.split('%%APP_TITLE_HTML%%').join(escHtml(document.getElementById('appTitle').value.trim()));
+    t=t.split(DEFAULT_NAVY).join(s.primary)
+       .split(DEFAULT_HOVER).join(s.hover)
+       .split(DEFAULT_TINT).join(s.tint);
+    return t;
+  }
+
+  // ---------- copy / download ----------
+  function copyFile(which,btnId){
+    const text=which==='code'?genCode():genIndex();
+    const btn=document.getElementById(btnId);
+    const done=()=>{const o=btn.textContent;btn.textContent='Copied \u2713';btn.classList.add('copied');
+      setTimeout(()=>{btn.textContent=o;btn.classList.remove('copied');},1800);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+    } else fallbackCopy(text,done);
+  }
+  function fallbackCopy(text,done){
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){alert('Copy failed — please select and copy manually.');}
+    document.body.removeChild(ta);
+  }
+  function downloadFile(which){
+    const text=which==='code'?genCode():genIndex();
+    const name=which==='code'?'Code.gs':'Index.html';
+    const blob=new Blob([text],{type:'text/plain'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=name;
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);document.body.removeChild(a);},100);
+  }
+
+  // ---------- transparency ----------
+  function renderWhatChanged(){
+    const admins=parseList('admins'), domains=parseDomains('domains');
+    const s=brandShades();
+    const title=document.getElementById('appTitle').value.trim();
+    const rows=[
+      ['Code.gs','SHEET_ID','&rarr; your spreadsheet: '+(idFrom('sheetId')||'(not set)')],
+      ['Code.gs','UPLOAD_FOLDER_ID','&rarr; your photo folder: '+(idFrom('folderId')||'(not set)')],
+      ['Code.gs','ADMIN_EMAILS','&rarr; '+(admins.length?admins.join(', '):'(none)')],
+      ['Code.gs','ORG_DOMAINS','&rarr; '+(domains.length?domains.join(', '):'(none)')],
+      ['Code.gs','app title','&rarr; '+(title||'(unset)')],
+      ['Index.html','title &amp; header','&rarr; '+(title||'(unset)')],
+      ['Index.html','brand color','&rarr; '+s.primary+(s.valid?'':' (unrecognized — kept default navy)')+'  (hover '+s.hover+', tint '+s.tint+' derived automatically)']
+    ];
+    document.getElementById('whatChanged').innerHTML=rows.map(r=>
+      '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('');
+  }
+
+  // ---------- deploy radios ----------
+  function pickAccess(){
+    document.querySelectorAll('#accessRadios label').forEach(l=>{
+      l.classList.toggle('sel',l.querySelector('input').checked);
+    });
+  }
+
+  function copyUrl(btn){
+    const url=document.getElementById('liveUrl').value.trim();
+    if(!url) return;
+    const done=()=>{const o=btn.textContent;btn.textContent='Copied \u2713';btn.classList.add('copied');
+      setTimeout(()=>{btn.textContent=o;btn.classList.remove('copied');},1500);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopy(url,done));}
+    else fallbackCopy(url,done);
+  }
+</script>
+
+</body>
+</html>
